@@ -366,7 +366,7 @@
             clock.cur = cur
 
             this.stop()
-            if (clock.value <= 0.0) {
+            if (clock.value <= 0.0 && clock.over <= 0.0) {
               return
             }
 
