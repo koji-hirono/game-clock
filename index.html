@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
     <title>Game Clock</title>
-    <script src="https://unpkg.com/vue/dist/vue.min.js"></script>
+    <script src="https://unpkg.com/vue"></script>
   </head>
   <body>
     <template id="clock">
@@ -13,10 +13,10 @@
           <button @click="toggle" :disabled="!myturn" type="button">Push</button>
         </div>
         <div :class="mainColor" class="display-main">
-          {{ main | formatTime }}
+          {{ formatTime(main) }}
         </div>
         <div :class="overColor" class="display-over">
-          {{ over | formatTime }}
+          {{ formatTime(over) }}
         </div>
         <!-- div>
           {{ main | toMsec }}
@@ -69,19 +69,6 @@
         over: Number,
         myturn: Boolean
       },
-      filters: {
-        toMsec(t) {
-          return Math.floor(t)
-        },
-        formatTime(t) {
-          const s = Math.floor(t / 1000.0)
-          const sec = s % 60
-          const min = Math.floor(s / 60)
-          const secs = sec < 10 ? '0' + sec : sec
-          const mins = min < 10 ? '0' + min : min
-          return mins + ':' + secs
-        }
-      },
       computed: {
         mainColor() {
           if (!this.myturn) {
@@ -105,6 +92,17 @@
         }
       },
       methods: {
+        toMsec(t) {
+          return Math.floor(t)
+        },
+        formatTime(t) {
+          const s = Math.floor(t / 1000.0)
+          const sec = s % 60
+          const min = Math.floor(s / 60)
+          const secs = sec < 10 ? '0' + sec : sec
+          const mins = min < 10 ? '0' + min : min
+          return mins + ':' + secs
+        },
         toggle() {
           this.$emit('toggle')
         }
@@ -114,9 +112,9 @@
 
     <template id="input-clock">
       <span>
-        <input :value="min" @input="inputMin" type="number" min="0" max="59" size="3">
+        <input v-model="min" type="number" min="0" max="59" size="3">
         :
-        <input :value="sec" @input="inputSec" type="number" min="0" max="59" size="3">
+        <input v-model="sec" type="number" min="0" max="59" size="3">
       </span>
     </template>
 
@@ -124,28 +122,33 @@
     const InputClock = {
       template: '#input-clock',
       props: {
-        value: Number
+        modelValue: Number
       },
-      data() {
-        const t = Math.floor(this.value / 1000)
-        return {
-          min: Math.floor(t / 60),
-          sec: t % 60
-        }
-      },
+      emits: ['update:modelValue'],
       computed: {
-        msec() {
-          return (this.min * 60 + this.sec) * 1000
+        t() {
+          return Math.floor(this.modelValue / 1000)
+        },
+        min: {
+          get() {
+            return Math.floor(this.t / 60)
+          },
+          set(value) {
+            this.$emit('update:modelValue', this.msec(value, this.sec))
+          }
+        },
+        sec: {
+          get() {
+            return this.t % 60
+          },
+          set(value) {
+            this.$emit('update:modelValue', this.msec(this.min, value))
+          }
         }
       },
       methods: {
-        inputMin(ev) {
-          this.min = ev.target.value
-          this.$emit('input', this.msec)
-        },
-        inputSec(ev) {
-          this.sec = ev.target.value
-          this.$emit('input', this.msec)
+        msec(min, sec) {
+          return (min * 60 + sec) * 1000
         }
       }
     }
@@ -212,38 +215,39 @@
     }
     </style>
     <script>
-      new Vue({
-        el: '#app',
+      Vue.createApp({
         components: {
           Clock,
           InputClock
         },
-        data: {
-          maintime: 300000.0,
-          overtime: 30000.0,
-          fischertime: 0,
-          clock: [
-            {
-              value: 10000.0,
-              over: 0,
-              start: 0,
-              timer: null,
-              cur: 0,
-              curover: 0
-            },
-            {
-              value: 10000.0,
-              over: 0,
-              start: 0,
-              timer: null,
-              cur: 0,
-              curover: 0
-            }
-          ],
-          turn: 0,
-          SE: null,
-          threshold: [],
-          error: ""
+        data() {
+          return {
+            maintime: 300000.0,
+            overtime: 30000.0,
+            fischertime: 0,
+            clock: [
+              {
+                value: 10000.0,
+                over: 0,
+                start: 0,
+                timer: null,
+                cur: 0,
+                curover: 0
+              },
+              {
+                value: 10000.0,
+                over: 0,
+                start: 0,
+                timer: null,
+                cur: 0,
+                curover: 0
+              }
+            ],
+            turn: 0,
+            SE: null,
+            threshold: [],
+            error: ""
+          }
         },
         computed: {
           running() {
@@ -409,7 +413,7 @@
           ]
           this.reset()
         }
-      })
+      }).mount('#app')
     </script>
   </body>
 </html>
